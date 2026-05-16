@@ -1,15 +1,27 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Bell, Command, X } from 'lucide-react';
+import { Search, Bell, Command, X, Clock } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
 
 export function TopNavbar() {
-  const { searchQuery, setSearchQuery, setCommandOpen, activities } = useStore();
+  const { searchQuery, setSearchQuery, setCommandOpen, activities, isPunchedIn, punchIn, punchOut, notifications, user } = useStore();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [punching, setPunching] = useState(false);
 
+  const isAdmin = user?.role === 'admin';
   const recentActivities = activities.slice(0, 5);
+  const allNotifs = [...notifications.map(n => ({ id: n.id, title: n.message, time: n.timestamp, type: n.type })), ...recentActivities.map(a => ({ id: a.id, title: `${a.user.name} ${a.action}`, time: a.timestamp, type: 'info' as const }))].slice(0, 10);
+
+  const handlePunch = async () => {
+    setPunching(true);
+    try {
+      if (isPunchedIn) await punchOut();
+      else await punchIn();
+    } catch { /* handled */ }
+    finally { setPunching(false); }
+  };
 
   return (
     <header className="h-16 flex items-center justify-between px-6 border-b border-white/[0.06] bg-background/50 backdrop-blur-xl z-30">
@@ -53,6 +65,25 @@ export function TopNavbar() {
 
       {/* Right section */}
       <div className="flex items-center gap-2">
+        {/* Punch In/Out — visible to non-admin */}
+        {!isAdmin && (
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handlePunch}
+            disabled={punching}
+            className={cn(
+              'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all',
+              isPunchedIn
+                ? 'bg-red-500/15 text-red-400 border border-red-500/25 hover:bg-red-500/25'
+                : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/25'
+            )}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            {punching ? '...' : isPunchedIn ? 'Punch Out' : 'Punch In'}
+          </motion.button>
+        )}
+
         {/* Notifications */}
         <div className="relative">
           <motion.button
@@ -67,9 +98,9 @@ export function TopNavbar() {
             )}
           >
             <Bell className="w-5 h-5" />
-            {recentActivities.length > 0 && (
+            {allNotifs.length > 0 && (
               <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center font-medium">
-                {recentActivities.length}
+                {allNotifs.length}
               </span>
             )}
           </motion.button>
@@ -95,20 +126,24 @@ export function TopNavbar() {
                     </button>
                   </div>
                   <div className="p-2">
-                    {recentActivities.length > 0 ? recentActivities.map((activity) => (
+                    {allNotifs.length > 0 ? allNotifs.map((notif) => (
                       <div
-                        key={activity.id}
-                        className="p-3 rounded-xl hover:bg-white/[0.02] cursor-pointer transition-colors"
+                        key={notif.id}
+                        className={cn(
+                          'p-3 rounded-xl transition-colors',
+                          notif.type === 'punch_in' ? 'bg-emerald-500/5' :
+                          notif.type === 'punch_out' ? 'bg-blue-500/5' :
+                          'hover:bg-white/[0.02]'
+                        )}
                       >
-                        <p className="text-sm font-medium">{activity.user.name} {activity.action}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{activity.target}</p>
-                        <p className="text-[10px] text-muted-foreground mt-1.5">
-                          {new Date(activity.timestamp).toLocaleString()}
+                        <p className="text-sm font-medium">{notif.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {new Date(notif.time).toLocaleString()}
                         </p>
                       </div>
                     )) : (
                       <div className="p-6 text-center text-sm text-muted-foreground">
-                        No recent activity
+                        No notifications
                       </div>
                     )}
                   </div>

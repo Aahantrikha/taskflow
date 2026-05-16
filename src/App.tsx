@@ -33,7 +33,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { isAuthenticated, fetchProjects, fetchTasks, fetchTeamMembers, fetchDashboard, fetchRemarks } = useStore();
+  const { isAuthenticated, fetchProjects, fetchTasks, fetchTeamMembers, fetchDashboard, fetchRemarks, fetchAttendanceStatus } = useStore();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -42,6 +42,7 @@ export default function App() {
       fetchTeamMembers();
       fetchDashboard();
       fetchRemarks();
+      fetchAttendanceStatus();
     }
   }, [isAuthenticated]);
 

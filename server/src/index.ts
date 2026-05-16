@@ -8,6 +8,7 @@ import taskRoutes from './routes/tasks';
 import userRoutes from './routes/users';
 import dashboardRoutes from './routes/dashboard';
 import remarkRoutes from './routes/remarks';
+import attendanceRoutes from './routes/attendance';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/remarks', remarkRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // Serve frontend static files in production
 const clientDistPath = path.join(__dirname, '../../dist');

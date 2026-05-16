@@ -155,6 +155,18 @@ export const remarksApi = {
     request<{ message: string }>(`/api/remarks/${id}`, { method: 'DELETE' }),
 };
 
+// ─── Attendance ──────────────────────────────────────────────────────────────
+
+export const attendanceApi = {
+  list: (date?: string) => {
+    const qs = date ? `?date=${date}` : '';
+    return request<ApiAttendance[]>(`/api/attendance${qs}`);
+  },
+  status: () => request<{ punchedIn: boolean; record: { id: string; punchIn: string } | null }>('/api/attendance/status'),
+  punchIn: () => request<ApiPunchResponse>('/api/attendance/punch-in', { method: 'POST' }),
+  punchOut: () => request<ApiPunchResponse>('/api/attendance/punch-out', { method: 'POST' }),
+};
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface ApiUser {
@@ -231,4 +243,21 @@ export interface ApiRemark {
   taskId: string;
   taskTitle: string;
   author: { id: string; name: string; avatar: string; role: string };
+}
+
+export interface ApiAttendance {
+  id: string;
+  punchIn: string;
+  punchOut: string | null;
+  hours: number | null;
+  userId: string;
+  user: { id: string; name: string; avatar: string; role: string };
+}
+
+export interface ApiPunchResponse {
+  id: string;
+  punchIn: string;
+  punchOut: string | null;
+  hours: number | null;
+  message: string;
 }

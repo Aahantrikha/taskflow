@@ -43,11 +43,14 @@ const itemVariants = {
 };
 
 export default function Dashboard() {
-  const { projects, tasks, teamMembers, activities, user } = useStore();
-  const { canManageTasks } = useRole();
+  const { projects, tasks, teamMembers, activities, user, attendanceRecords, fetchAttendance } = useStore();
+  const { canManageTasks, isAdmin } = useRole();
   const navigate = useNavigate();
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+
+  // Fetch attendance for admin
+  useState(() => { if (isAdmin) fetchAttendance(); });
 
   // Derive project chart data from real projects
   const projectData = projects.map(p => ({ name: p.name.split(' ')[0], tasks: p.taskCount }));
@@ -152,6 +155,45 @@ export default function Dashboard() {
           glowColor="59, 130, 246"
         />
       </motion.div>
+
+      {/* Admin: Team Attendance */}
+      {isAdmin && attendanceRecords.length > 0 && (
+        <motion.div variants={itemVariants}>
+          <GlassCard>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold font-display">Team Attendance</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">Today's punch in/out records</p>
+              </div>
+              <button onClick={() => fetchAttendance()} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">Refresh</button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/[0.06]">
+                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground uppercase">Name</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground uppercase">Role</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground uppercase">Punch In</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground uppercase">Punch Out</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground uppercase">Hours</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.04]">
+                  {attendanceRecords.map(r => (
+                    <tr key={r.id} className="hover:bg-white/[0.02]">
+                      <td className="px-3 py-3 text-sm font-medium">{r.user.name}</td>
+                      <td className="px-3 py-3 text-xs text-muted-foreground capitalize">{r.user.role.replace('_', ' ')}</td>
+                      <td className="px-3 py-3 text-xs text-emerald-400">{new Date(r.punchIn).toLocaleTimeString()}</td>
+                      <td className="px-3 py-3 text-xs">{r.punchOut ? <span className="text-blue-400">{new Date(r.punchOut).toLocaleTimeString()}</span> : <span className="text-amber-400">Active</span>}</td>
+                      <td className="px-3 py-3 text-xs font-medium">{r.hours ? `${r.hours}h` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </GlassCard>
+        </motion.div>
+      )}
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

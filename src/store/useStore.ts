@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import {
-  authApi, projectsApi, tasksApi, usersApi, dashboardApi, remarksApi,
+  authApi, projectsApi, tasksApi, usersApi, dashboardApi, remarksApi, attendanceApi,
   setToken, clearToken,
   type ApiUser, type ApiProject, type ApiTask, type ApiTeamMember, type ApiDashboard,
 } from '@/lib/api';
@@ -71,6 +71,22 @@ export interface Remark {
   taskId: string;
   taskTitle: string;
   author: { id: string; name: string; avatar: string; role: string };
+}
+
+export interface AttendanceRecord {
+  id: string;
+  punchIn: string;
+  punchOut: string | null;
+  hours: number | null;
+  userId: string;
+  user: { id: string; name: string; avatar: string; role: string };
+}
+
+export interface Notification {
+  id: string;
+  message: string;
+  timestamp: string;
+  type: 'punch_in' | 'punch_out' | 'info';
 }
 
 // ─── Helper: map API types to store types ────────────────────────────────────
@@ -178,6 +194,17 @@ interface AppState {
   updateUserRole: (userId: string, role: UserRole) => Promise<void>;
   addRemark: (data: { taskId: string; content: string; type?: string }) => Promise<void>;
   deleteRemark: (id: string) => Promise<void>;
+
+  // Attendance
+  isPunchedIn: boolean;
+  punchRecord: { id: string; punchIn: string } | null;
+  attendanceRecords: AttendanceRecord[];
+  notifications: Notification[];
+  fetchAttendanceStatus: () => Promise<void>;
+  fetchAttendance: (date?: string) => Promise<void>;
+  punchIn: () => Promise<void>;
+  punchOut: () => Promise<void>;
+  addNotification: (msg: string, type: Notification['type']) => void;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -210,6 +237,7 @@ export const useStore = create<AppState>((set, get) => ({
         get().fetchTasks(),
         get().fetchTeamMembers(),
         get().fetchDashboard(),
+        get().fetchAttendanceStatus(),
       ]);
       return { success: true };
     } catch (err) {
@@ -477,5 +505,56 @@ export const useStore = create<AppState>((set, get) => ({
       console.error('Failed to delete remark:', err);
       throw err;
     }
+  },
+
+  // Attendance
+  isPunchedIn: false,
+  punchRecord: null,
+  attendanceRecords: [],
+  notifications: [],
+
+  fetchAttendanceStatus: async () => {
+    try {
+      const data = await attendanceApi.status();
+      set({ isPunchedIn: data.punchedIn, punchRecord: data.record });
+    } catch (err) {
+      console.error('Failed to fetch attendance status:', err);
+    }
+  },
+
+  fetchAttendance: async (date) => {
+    try {
+      const data = await attendanceApi.list(date);
+      set({ attendanceRecords: data });
+    } catch (err) {
+      console.error('Failed to fetch attendance:', err);
+    }
+  },
+
+  punchIn: async () => {
+    try {
+      const data = await attendanceApi.punchIn();
+      set({ isPunchedIn: true, punchRecord: { id: data.id, punchIn: data.punchIn } });
+      get().addNotification(data.message, 'punch_in');
+    } catch (err) {
+      console.error('Failed to punch in:', err);
+      throw err;
+    }
+  },
+
+  punchOut: async () => {
+    try {
+      const data = await attendanceApi.punchOut();
+      set({ isPunchedIn: false, punchRecord: null });
+      get().addNotification(data.message, 'punch_out');
+    } catch (err) {
+      console.error('Failed to punch out:', err);
+      throw err;
+    }
+  },
+
+  addNotification: (message, type) => {
+    const notif: Notification = { id: Date.now().toString(), message, timestamp: new Date().toISOString(), type };
+    set((state) => ({ notifications: [notif, ...state.notifications].slice(0, 20) }));
   },
 }));

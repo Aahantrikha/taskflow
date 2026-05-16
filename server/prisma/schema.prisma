@@ -57,6 +57,7 @@ model User {
   createdProjects    Project[]       @relation("ProjectCreator")
   activities         Activity[]
   remarks            Remark[]        @relation("RemarkAuthor")
+  attendance         Attendance[]
 
   @@map("users")
 }
@@ -145,4 +146,17 @@ model Remark {
   author    User     @relation("RemarkAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@map("remarks")
+}
+
+model Attendance {
+  id        String    @id @default(cuid())
+  punchIn   DateTime  @default(now())
+  punchOut  DateTime?
+  hours     Float?
+  createdAt DateTime  @default(now())
+
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("attendance")
 }
