@@ -10,7 +10,6 @@ export function TopNavbar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [punching, setPunching] = useState(false);
 
-  const isAdmin = user?.role === 'admin';
   const recentActivities = activities.slice(0, 5);
   const allNotifs = [...notifications.map(n => ({ id: n.id, title: n.message, time: n.timestamp, type: n.type })), ...recentActivities.map(a => ({ id: a.id, title: `${a.user.name} ${a.action}`, time: a.timestamp, type: 'info' as const }))].slice(0, 10);
 
@@ -65,8 +64,8 @@ export function TopNavbar() {
 
       {/* Right section */}
       <div className="flex items-center gap-2">
-        {/* Punch In/Out — visible to non-admin */}
-        {!isAdmin && (
+        {/* Punch In/Out */}
+        {(
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

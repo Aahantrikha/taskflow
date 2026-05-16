@@ -10,6 +10,8 @@ import {
   Zap,
   Target,
   MessageSquare,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useRole } from '@/hooks/useRole';
@@ -26,6 +28,65 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, 
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+function PunchCard() {
+  const { isPunchedIn, punchRecord, punchIn, punchOut, user } = useStore();
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handlePunch = async () => {
+    setLoading(true);
+    setMessage('');
+    try {
+      if (isPunchedIn) {
+        await punchOut();
+        setMessage('Punched out successfully!');
+      } else {
+        await punchIn();
+        setMessage('Punched in successfully!');
+      }
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-white/[0.03] to-white/[0.01] border border-white/[0.08]">
+      <div className="flex items-center gap-4 flex-1">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isPunchedIn ? 'bg-emerald-500/15' : 'bg-white/[0.05]'}`}>
+          <Clock className={`w-6 h-6 ${isPunchedIn ? 'text-emerald-400' : 'text-muted-foreground'}`} />
+        </div>
+        <div>
+          <p className="text-sm font-semibold">
+            {isPunchedIn ? '🟢 You are clocked in' : '⚪ Not clocked in'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isPunchedIn && punchRecord
+              ? `Since ${new Date(punchRecord.punchIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+              : 'Click to start your work session'}
+          </p>
+          {message && <p className="text-xs text-blue-400 mt-1">{message}</p>}
+        </div>
+      </div>
+      <motion.button
+        whileHover={{ scale: 1.03 }}
+        whileTap={{ scale: 0.97 }}
+        onClick={handlePunch}
+        disabled={loading}
+        className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg ${
+          isPunchedIn
+            ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20'
+            : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20'
+        } disabled:opacity-60`}
+      >
+        {isPunchedIn ? <LogOut className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+        {loading ? 'Processing...' : isPunchedIn ? 'Punch Out' : 'Punch In'}
+      </motion.button>
+    </div>
+  );
+}
 
 const taskTrendData: { name: string; completed: number; created: number }[] = [];
 
@@ -87,6 +148,11 @@ export default function Dashboard() {
         <div className="text-sm text-muted-foreground">
           {format(new Date(), 'EEEE, MMMM d, yyyy')}
         </div>
+      </motion.div>
+
+      {/* Punch In/Out Card — visible to all */}
+      <motion.div variants={itemVariants}>
+        <PunchCard />
       </motion.div>
 
       {/* Stats */}
