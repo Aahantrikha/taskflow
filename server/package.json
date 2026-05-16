@@ -10,7 +10,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
-    "db:seed": "ts-node src/seed.ts",
+    "db:seed": "npx ts-node src/seed.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
